@@ -23,23 +23,23 @@ export class EfsConstruct extends Construct {
     this.fileSystem = new FileSystem(this, 'FileSystem', {
       vpc: props.vpc,
       fileSystemName: `${props.resourceName}-efs`,
-      // NOTE: transitioned to IA storage after 14 days
+      // NOTE: 14日後に低頻度アクセスストレージ(IAストレージ)に移行
       lifecyclePolicy: LifecyclePolicy.AFTER_14_DAYS,
-      // NOTE: transitioned to primary storage after 1 access
+      // NOTE: 1回のアクセス後にプライマリストレージに移行
       outOfInfrequentAccessPolicy: OutOfInfrequentAccessPolicy.AFTER_1_ACCESS,
       securityGroup: props.securityGroup,
     });
 
     this.accessPoint = this.fileSystem.addAccessPoint('AccessPoint', {
-      // NOTE: set access point root
+      // NOTE: アクセスポイントのルートを設定
       path: '/export/lambda',
-      // NOTE: `/export/lambda` does not exist in a new efs filesystem, the efs will create the directory with the following createAcl
+      // NOTE: `/export/lambda` が新しい EFSに存在しない場合、EFSは以下のcreateAclを使用してディレクトリを作成する
       createAcl: {
         ownerGid: '1001',
         ownerUid: '1001',
         permissions: '750',
       },
-      // NOTE: enforce the POSIX identity so lambda function will access with this identity
+      // NOTE: POSIX IDを強制してLambda関数がこのIDでアクセスするようにする
       posixUser: {
         gid: '1001',
         uid: '1001',

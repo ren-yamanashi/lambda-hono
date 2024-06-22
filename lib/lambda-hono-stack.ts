@@ -13,7 +13,7 @@ export class LambdaHonoStack extends Stack {
 
     const vpcConstruct = new VpcConstruct(this, 'Vpc', { resourceName });
 
-    const securityGroup = new SecurityGroupConstruct(this, `SecurityGroup`, {
+    const securityGroup = new SecurityGroupConstruct(this, 'SecurityGroup', {
       vpc: vpcConstruct.vpc,
       resourceName,
     });
@@ -41,7 +41,7 @@ export class LambdaHonoStack extends Stack {
       resources: [efsConstruct.fileSystem.fileSystemArn],
     });
 
-    // NOTE: Attach the policy to all functions
+    // NOTE: EFSに対するアクセス権限をLambda関数に付与
     lambdaConstruct.assignRolePolicy(efsPolicy);
   }
 }

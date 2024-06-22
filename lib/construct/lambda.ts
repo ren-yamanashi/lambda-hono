@@ -35,7 +35,7 @@ export class LambdaConstruct extends Construct {
       databaseUrl: 'file:/mnt/efs/prisma/dev.db',
     };
 
-    // NOTE: will be called by the API Gateway
+    // NOTE: API Gatewayから呼び出されるLambda関数
     this.honoLambdaFn = new NodejsFunctionWithConnectPrisma(this, 'HonoLambda', {
       functionName: `${props.resourceName}-lambda`,
       entry: 'backend/index.ts',
@@ -43,7 +43,7 @@ export class LambdaConstruct extends Construct {
       ...commonDatabaseConnectionProps,
     });
 
-    // NOTE: will be used to migrate the database
+    // NOTE: マイグレーション用のLambda関数
     this.migrateLambdaFn = new NodejsFunctionWithConnectPrisma(this, 'MigrateLambda', {
       functionName: `${props.resourceName}-migrate`,
       entry: 'backend/migrate.ts',
@@ -57,8 +57,8 @@ export class LambdaConstruct extends Construct {
   }
 
   /**
-   * Assigns the given policy to the role of the lambda functions.
-   * @param {PolicyStatement} policy The policy to assign
+   * 指定されたポリシーをラムダ関数のロールに割り当てる
+   * @param {PolicyStatement} policy 割り当てるポリシー
    */
   public assignRolePolicy(policy: PolicyStatement): void {
     this.honoLambdaFn.addToRolePolicy(policy);

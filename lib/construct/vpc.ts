@@ -14,7 +14,7 @@ export class VpcConstruct extends Construct {
     this.vpc = new Vpc(this, 'VPC', {
       vpcName: `${props.resourceName}-isolated-vpc`,
       ipAddresses: IpAddresses.cidr('192.168.0.0/24'),
-      // NOTE: Create only a privateSubnet. Since it is isolated, no NAT Gateway is created.
+      // NOTE: プライベートサブネットのみを作成。ISOLATEDなので、NAT ゲートウェイは作成されない
       subnetConfiguration: [
         {
           cidrMask: 26,
