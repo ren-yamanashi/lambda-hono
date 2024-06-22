@@ -2,7 +2,6 @@ import { IAccessPoint } from 'aws-cdk-lib/aws-efs';
 import { FileSystem, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
-import { z } from 'zod';
 
 export interface DatabaseConnectionProps extends NodejsFunctionProps {
   accessPoint: IAccessPoint;
@@ -33,7 +32,7 @@ export class NodejsFunctionWithConnectPrisma extends NodejsFunction {
   }
 
   private validateDatabaseUrl(arg: string) {
-    z.string().url().parse(arg);
+    if (!arg.includes('file:')) throw new Error('The database URL must be a file URL');
     this.addEnvironment('DATABASE_URL', arg);
   }
 }
