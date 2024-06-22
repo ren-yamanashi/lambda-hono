@@ -4,8 +4,5 @@ node_modules
 .cdk.staging
 cdk.out
 
-# Environment file
-.env
-
-# Local Database
-backend/prisma/dev.db*
+# Prisma files
+backend/prisma
