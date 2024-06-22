@@ -1,0 +1,27 @@
+{
+  "name": "@lambda-hono/backend",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc",
+    "generate": "prisma generate",
+    "migrate": "prisma migrate deploy"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.140",
+    "@types/node": "^20.14.7",
+    "esbuild": "^0.21.5",
+    "prisma": "^5.15.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.2"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.2.2",
+    "@prisma/client": "^5.15.1",
+    "hono": "^4.4.7",
+    "zod": "^3.23.8"
+  },
+  "volta": {
+    "node": "20.11.0"
+  }
+}
