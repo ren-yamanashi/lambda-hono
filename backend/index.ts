@@ -35,10 +35,6 @@ app.use((c, next) => {
 
 // Error handling middleware
 app.onError((err, c) => {
-  logger.error({
-    message: err.message,
-    stack: err.stack,
-  });
   if (err instanceof HTTPException) {
     return c.json(err.message, err.status);
   }
@@ -56,6 +52,10 @@ app.get('/users', async c => {
     });
     return c.json(users);
   } catch (error) {
+    logger.error({
+      message: error instanceof Error ? error.message : `${error}`,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     throw new HTTPException(500, { message: 'Internal Server Error' });
   } finally {
     await prisma.$disconnect();
@@ -87,6 +87,10 @@ app.post(
       });
       return c.json({ message: 'User created successfully' });
     } catch (error) {
+      logger.error({
+        message: error instanceof Error ? error.message : `${error}`,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       throw new HTTPException(500, { message: 'Internal Server Error' });
     } finally {
       await prisma.$disconnect();
