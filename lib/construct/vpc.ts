@@ -12,13 +12,13 @@ export class VpcConstruct extends Construct {
     super(scope, id);
 
     this.vpc = new Vpc(this, 'VPC', {
-      vpcName: `${props.resourceName}-isolated-vpc`,
+      vpcName: `${props.resourceName}-vpc`,
       ipAddresses: IpAddresses.cidr('192.168.0.0/24'),
       // NOTE: プライベートサブネットのみを作成。ISOLATEDなので、NAT ゲートウェイは作成されない
       subnetConfiguration: [
         {
           cidrMask: 26,
-          name: 'efs',
+          name: 'isolated',
           subnetType: SubnetType.PRIVATE_ISOLATED,
         },
       ],
