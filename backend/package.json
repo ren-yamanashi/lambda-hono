@@ -16,6 +16,7 @@
     "typescript": "^5.5.2"
   },
   "dependencies": {
+    "@aws-lambda-powertools/logger": "^2.2.0",
     "@hono/zod-validator": "^0.2.2",
     "@prisma/client": "^5.15.1",
     "hono": "^4.4.7",

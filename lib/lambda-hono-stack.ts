@@ -1,5 +1,6 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import { ApiGatewayConstruct } from './construct/api-gateway';
 import { EfsConstruct } from './construct/efs';
@@ -10,6 +11,11 @@ import { VpcConstruct } from './construct/vpc';
 export class LambdaHonoStack extends Stack {
   constructor(scope: Construct, id: string, resourceName: string, props?: StackProps) {
     super(scope, id, props);
+
+    const logGroup = new LogGroup(this, 'CustomLogGroup', {
+      logGroupName: `lambda/${resourceName}`,
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
 
     const vpcConstruct = new VpcConstruct(this, 'Vpc', { resourceName });
 
@@ -29,6 +35,7 @@ export class LambdaHonoStack extends Stack {
       securityGroups: [securityGroup.lambdaSecurityGroup],
       accessPoint: efsConstruct.accessPoint,
       resourceName,
+      logGroup,
     });
 
     new ApiGatewayConstruct(this, 'ApiGateway', {

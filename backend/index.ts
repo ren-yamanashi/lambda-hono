@@ -1,9 +1,12 @@
+import { Logger } from '@aws-lambda-powertools/logger';
+import { zValidator } from '@hono/zod-validator';
+import { PrismaClient } from '@prisma/client';
 import { Hono } from 'hono';
 import { handle } from 'hono/aws-lambda';
-import { z } from 'zod';
-import { zValidator } from '@hono/zod-validator';
 import { HTTPException } from 'hono/http-exception';
-import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
+
+const logger = new Logger();
 
 const createUserRequestSchema = z.object({
   name: z.string(),
@@ -20,8 +23,22 @@ const createUserRequestSchema = z.object({
 const app = new Hono();
 const prisma = new PrismaClient();
 
+// Logging middleware
+app.use((c, next) => {
+  logger.info({
+    message: 'Request received',
+    path: c.req.path,
+    method: c.req.method,
+  });
+  return next();
+});
+
+// Error handling middleware
 app.onError((err, c) => {
-  console.log(err);
+  logger.error({
+    message: err.message,
+    stack: err.stack,
+  });
   if (err instanceof HTTPException) {
     return c.json(err.message, err.status);
   }
