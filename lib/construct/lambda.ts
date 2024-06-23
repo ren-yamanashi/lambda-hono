@@ -5,6 +5,7 @@ import { AccessPoint } from 'aws-cdk-lib/aws-efs';
 import { PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { FunctionUrlAuthType } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
+import { LogGroup } from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import {
   DatabaseConnectionProps,
@@ -16,6 +17,7 @@ interface LambdaConstructProps {
   securityGroups: SecurityGroup[];
   accessPoint: AccessPoint;
   resourceName: string;
+  logGroup: LogGroup;
 }
 
 export class LambdaConstruct extends Construct {
