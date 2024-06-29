@@ -3,9 +3,6 @@
   "editor.formatOnSave": true,
   "editor.formatOnType": true,
   "editor.codeActionsOnSave": ["source.organizeImports", "source.fixAll.eslint"],
-  "eslint.options": {
-    "ignorePath": "./.eslintignore"
-  },
   "prettier.configPath": ".prettierrc",
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -19,6 +16,7 @@
   "[prisma]": {
     "editor.defaultFormatter": "Prisma.prisma"
   },
+  "eslint.workingDirectories": ["."],
   "cSpell.words": [
     "apigw",
     "Hono",
