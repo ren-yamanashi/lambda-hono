@@ -13,7 +13,10 @@
     "cdk": "cdk",
     "type-check": "pnpm tsc --noEmit",
     "lint": "eslint . --ext .js,.ts --ignore-path .eslintignore",
-    "format": "prettier --write \"**/*.{js,json,ts}\" --ignore-path .prettierignore"
+    "format": "prettier --write \"**/*.{js,json,ts}\" --ignore-path .prettierignore",
+    "db:up": "docker compose -f ./database/docker-compose.yaml up -d",
+    "db:down": "docker compose -f ./database/docker-compose.yaml down",
+    "db:start-local": "psql -h localhost -p 5434 -U default -d lambda_hono"
   },
   "lint-staged": {
     "*.@(ts|tsx)": [

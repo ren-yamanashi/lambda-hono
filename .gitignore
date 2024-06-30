@@ -7,5 +7,5 @@ cdk.out
 # Environment file
 .env
 
-# Local Database
-backend/prisma/dev.db*
+# Database
+database/postgresql_devmode/

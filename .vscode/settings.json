@@ -19,6 +19,7 @@
   "eslint.workingDirectories": ["."],
   "cSpell.words": [
     "apigw",
+    "dbname",
     "Hono",
     "Parens"
   ]
