@@ -1,6 +1,5 @@
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
-import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 
 import { Construct } from 'constructs';
 
@@ -11,7 +10,6 @@ interface RdsConstructProps {
 
 export class RdsConstruct extends Construct {
   readonly cluster: rds.DatabaseCluster;
-  readonly secret: secretsmanager.ISecret;
 
   constructor(scope: Construct, id: string, props: RdsConstructProps) {
     super(scope, id);
@@ -39,7 +37,6 @@ export class RdsConstruct extends Construct {
     });
 
     this.cluster = cluster;
-    this.secret = cluster.secret!;
   }
 
   allowInboundAccess(peer: ec2.IPeer) {
