@@ -1,19 +1,29 @@
-import { IAccessPoint } from 'aws-cdk-lib/aws-efs';
-import { FileSystem, Runtime } from 'aws-cdk-lib/aws-lambda';
-import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 
-export interface DatabaseConnectionProps extends NodejsFunctionProps {
-  accessPoint: IAccessPoint;
-  mountPath: string;
-  databaseUrl: string;
+export interface DatabaseConnectionProps {
+  host: string;
+  port: string;
+  engine: string;
+  username: string;
+  password: string;
+  dbname: string;
 }
 
-export class NodejsFunctionWithConnectPrisma extends NodejsFunction {
-  constructor(scope: Construct, id: string, props: DatabaseConnectionProps) {
+interface NodejsFunctionWithConnectPrismaProps extends lambdaNodejs.NodejsFunctionProps {
+  database: DatabaseConnectionProps;
+}
+
+export class NodejsFunctionWithConnectPrisma extends lambdaNodejs.NodejsFunction {
+  constructor(scope: Construct, id: string, props: NodejsFunctionWithConnectPrismaProps) {
+    const { engine, username, password, host, port, dbname } = props.database;
     super(scope, id, {
       ...props,
-      filesystem: FileSystem.fromEfsAccessPoint(props.accessPoint, props.mountPath),
+      environment: {
+        ...props.environment,
+        DATABASE_URL: `${engine}://${username}:${password}@${host}:${port}/${dbname}`,
+      },
       bundling: {
         nodeModules: ['prisma', '@prisma/client'].concat(props.bundling?.nodeModules ?? []),
         commandHooks: {
@@ -24,14 +34,7 @@ export class NodejsFunctionWithConnectPrisma extends NodejsFunction {
         },
       },
       depsLockFilePath: 'backend/package-lock.json',
-      runtime: Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
     });
-
-    this.validateDatabaseUrl(props.databaseUrl);
-  }
-
-  private validateDatabaseUrl(arg: string) {
-    if (!arg.includes('file:')) throw new Error('The database URL must be a file URL');
-    this.addEnvironment('DATABASE_URL', arg);
   }
 }
