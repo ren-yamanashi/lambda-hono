@@ -1,8 +1,8 @@
 {
-  "name": "lambda-hono",
+  "name": "lambda-rds",
   "version": "0.1.0",
   "bin": {
-    "lambda-hono": "bin/lambda-hono.js"
+    "lambda-rds": "bin/lambda-rds.js"
   },
   "volta": {
     "node": "20.11.0"

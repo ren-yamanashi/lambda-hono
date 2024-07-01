@@ -4,15 +4,12 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
-import {
-  DatabaseConnectionProps,
-  NodejsFunctionWithConnectPrisma,
-} from './private/prisma-function';
+import { DatabaseConnectionInfo, NodejsFunctionWithConnectPrisma } from './private/prisma-function';
 
 interface LambdaConstructProps {
   vpc: ec2.IVpc;
   securityGroups: ec2.ISecurityGroup[];
-  database: DatabaseConnectionProps;
+  database: DatabaseConnectionInfo;
   resourceName: string;
   logGroup: logs.ILogGroup;
 }
@@ -33,7 +30,7 @@ export class LambdaConstruct extends Construct {
 
     // NOTE: API Gatewayから呼び出されるLambda関数
     this.honoLambdaFn = new NodejsFunctionWithConnectPrisma(this, 'HonoLambda', {
-      functionName: `${props.resourceName}-lambda`,
+      functionName: `${props.resourceName}-hono`,
       entry: 'backend/index.ts',
       handler: 'handler',
       database: props.database,

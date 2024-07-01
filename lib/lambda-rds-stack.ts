@@ -7,7 +7,7 @@ import { RdsConstruct } from './construct/rds';
 import { SecurityGroupConstruct } from './construct/security-group';
 import { VpcConstruct } from './construct/vpc';
 
-export class LambdaHonoStack extends cdk.Stack {
+export class LambdaRdsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, resourceName: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -27,8 +27,8 @@ export class LambdaHonoStack extends cdk.Stack {
       vpc: vpcConstruct.vpc,
       resourceName,
     });
-    const secret = rdsConstruct.cluster.secret;
-    if (!secret) throw new Error('Secret not found');
+    const secret = rdsConstruct.instance.secret;
+    if (!secret) throw new Error('Rds secret not found.');
 
     const lambdaConstruct = new LambdaConstruct(this, 'Lambda', {
       vpc: vpcConstruct.vpc,
@@ -36,8 +36,8 @@ export class LambdaHonoStack extends cdk.Stack {
       database: {
         // NOTE: ここでシークレットのみを使用すると値の更新に失敗するため、ホストとポートには直接参照を使用する
         // https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/369
-        host: rdsConstruct.cluster.clusterEndpoint.hostname,
-        port: cdk.Token.asString(rdsConstruct.cluster.clusterEndpoint.port),
+        host: rdsConstruct.instance.instanceEndpoint.hostname,
+        port: cdk.Token.asString(rdsConstruct.instance.instanceEndpoint.port),
         // NOTE: `toString()`を使用する場合は、`unsafeUnwrap()`を使用しないとエラーになる
         // https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_core.SecretValue.html#unsafewbrunwrap
         engine: secret.secretValueFromJson('engine').unsafeUnwrap().toString(),

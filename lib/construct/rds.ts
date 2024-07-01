@@ -9,37 +9,40 @@ interface RdsConstructProps {
 }
 
 export class RdsConstruct extends Construct {
-  readonly cluster: rds.DatabaseCluster;
+  readonly instance: rds.DatabaseInstance;
 
   constructor(scope: Construct, id: string, props: RdsConstructProps) {
     super(scope, id);
 
-    const engine = rds.DatabaseClusterEngine.auroraPostgres({
-      version: rds.AuroraPostgresEngineVersion.VER_16_2,
+    const engine = rds.DatabaseInstanceEngine.postgres({
+      version: rds.PostgresEngineVersion.VER_16_2,
     });
     const credentials = rds.Credentials.fromGeneratedSecret('cdk_test_user', {
       secretName: `/${props.resourceName}/rds/`,
     });
 
-    const cluster = new rds.DatabaseCluster(this, 'RdsCluster', {
+    const instance = new rds.DatabaseInstance(this, 'RdsInstance', {
       engine,
-      defaultDatabaseName: 'cdk_test_db',
-      writer: rds.ClusterInstance.serverlessV2('Writer', {
-        enablePerformanceInsights: true,
-        caCertificate: rds.CaCertificate.RDS_CA_ECC384_G1,
-      }),
+      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
+      credentials,
+      databaseName: 'cdk_test_db',
       vpc: props.vpc,
       vpcSubnets: props.vpc.selectSubnets({
         subnets: props.vpc.isolatedSubnets.concat(props.vpc.privateSubnets),
       }),
+      availabilityZone: 'ap-northeast-1a',
       storageEncrypted: true,
-      credentials,
+      storageType: rds.StorageType.GP2,
+      // NOTE: GP2で利用できる最小のストレージサイズを選択
+      // https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/UserGuide/CHAP_Storage.html
+      allocatedStorage: 5,
+      maxAllocatedStorage: 10,
     });
 
-    this.cluster = cluster;
+    this.instance = instance;
   }
 
   allowInboundAccess(peer: ec2.IPeer) {
-    this.cluster.connections.allowDefaultPortFrom(peer);
+    this.instance.connections.allowDefaultPortFrom(peer);
   }
 }

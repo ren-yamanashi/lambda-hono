@@ -1,5 +1,5 @@
 {
-  "name": "@lambda-hono/backend",
+  "name": "@lambda-rds/backend",
   "private": true,
   "version": "0.1.0",
   "scripts": {

@@ -2,7 +2,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 
-export interface DatabaseConnectionProps {
+export interface DatabaseConnectionInfo {
   host: string;
   port: string;
   engine: string;
@@ -12,7 +12,7 @@ export interface DatabaseConnectionProps {
 }
 
 interface NodejsFunctionWithConnectPrismaProps extends lambdaNodejs.NodejsFunctionProps {
-  database: DatabaseConnectionProps;
+  database: DatabaseConnectionInfo;
 }
 
 export class NodejsFunctionWithConnectPrisma extends lambdaNodejs.NodejsFunction {
