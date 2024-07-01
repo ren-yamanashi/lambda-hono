@@ -11,9 +11,9 @@ export class ApiGatewayConstruct extends Construct {
   constructor(scope: Construct, id: string, props: ApiGatewayConstructProps) {
     super(scope, id);
 
-    new apigateway.LambdaRestApi(this, 'LambdaApiGateway', {
+    new apigateway.LambdaRestApi(this, 'LambdaRestAPi', {
       handler: props.handler,
-      restApiName: `${props.resourceName}-api`,
+      restApiName: `${props.resourceName}-apigw`,
     });
   }
 }
