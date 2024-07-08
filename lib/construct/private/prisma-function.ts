@@ -3,16 +3,16 @@ import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 
 export interface DatabaseConnectionInfo {
-  host: string;
-  port: string;
-  engine: string;
-  username: string;
-  password: string;
-  dbname: string;
+  readonly host: string;
+  readonly port: string;
+  readonly engine: string;
+  readonly username: string;
+  readonly password: string;
+  readonly dbname: string;
 }
 
 interface NodejsFunctionWithConnectPrismaProps extends lambdaNodejs.NodejsFunctionProps {
-  database: DatabaseConnectionInfo;
+  readonly database: DatabaseConnectionInfo;
 }
 
 export class NodejsFunctionWithConnectPrisma extends lambdaNodejs.NodejsFunction {

@@ -4,12 +4,12 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 
 interface RdsConstructProps {
-  vpc: ec2.IVpc;
-  resourceName: string;
+  readonly vpc: ec2.IVpc;
+  readonly resourceName: string;
 }
 
 export class RdsConstruct extends Construct {
-  readonly instance: rds.DatabaseInstance;
+  public readonly instance: rds.DatabaseInstance;
 
   constructor(scope: Construct, id: string, props: RdsConstructProps) {
     super(scope, id);

@@ -7,16 +7,16 @@ import { Construct } from 'constructs';
 import { DatabaseConnectionInfo, NodejsFunctionWithConnectPrisma } from './private/prisma-function';
 
 interface LambdaConstructProps {
-  vpc: ec2.IVpc;
-  securityGroups: ec2.ISecurityGroup[];
-  database: DatabaseConnectionInfo;
-  resourceName: string;
-  logGroup: logs.ILogGroup;
+  readonly vpc: ec2.IVpc;
+  readonly securityGroups: ec2.ISecurityGroup[];
+  readonly database: DatabaseConnectionInfo;
+  readonly resourceName: string;
+  readonly logGroup: logs.ILogGroup;
 }
 
 export class LambdaConstruct extends Construct {
-  public readonly honoLambdaFn: lambdaNodejs.NodejsFunction;
-  public readonly migrateLambdaFn: lambdaNodejs.NodejsFunction;
+  public readonly honoLambdaFn: lambda.IFunction;
+  public readonly migrateLambdaFn: lambda.IFunction;
 
   constructor(scope: Construct, id: string, props: LambdaConstructProps) {
     super(scope, id);

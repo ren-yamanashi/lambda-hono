@@ -1,7 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
 import { ApiGatewayConstruct } from './construct/api-gateway';
+import { ErrorAlarmConstruct } from './construct/error-alarm';
 import { LambdaConstruct } from './construct/lambda';
 import { RdsConstruct } from './construct/rds';
 import { SecurityGroupConstruct } from './construct/security-group';
@@ -55,5 +57,17 @@ export class LambdaRdsStack extends cdk.Stack {
       handler: lambdaConstruct.honoLambdaFn,
       resourceName,
     });
+
+    const errorAlarm = new ErrorAlarmConstruct(this, 'ErrorAlarm', { logGroup, resourceName });
+
+    // NOTE: CloudWatchからSNSに対してパブリッシュを許可
+    const snsPublishPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [new iam.ServicePrincipal('cloudwatch.amazonaws.com')],
+      actions: ['sns:Publish'],
+      resources: [errorAlarm.topicArn],
+    });
+
+    errorAlarm.addResourcePolicy(snsPublishPolicy);
   }
 }

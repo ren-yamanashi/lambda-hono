@@ -2,11 +2,11 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
 interface VpcConstructProps {
-  resourceName: string;
+  readonly resourceName: string;
 }
 
 export class VpcConstruct extends Construct {
-  public readonly vpc: ec2.Vpc;
+  public readonly vpc: ec2.IVpc;
 
   constructor(scope: Construct, id: string, props: VpcConstructProps) {
     super(scope, id);

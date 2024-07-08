@@ -2,12 +2,12 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 
 interface SecurityGroupConstructProps {
-  vpc: ec2.IVpc;
-  resourceName: string;
+  readonly vpc: ec2.IVpc;
+  readonly resourceName: string;
 }
 
 export class SecurityGroupConstruct extends Construct {
-  public readonly lambdaSecurityGroup: ec2.SecurityGroup;
+  public readonly lambdaSecurityGroup: ec2.ISecurityGroup;
 
   constructor(scope: Construct, id: string, props: SecurityGroupConstructProps) {
     super(scope, id);

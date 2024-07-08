@@ -6,7 +6,7 @@ import { handle } from 'hono/aws-lambda';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 
-const logger = new Logger();
+const logger = new Logger({ serviceName: 'hono-prisma' });
 
 const createUserRequestSchema = z.object({
   name: z.string(),
@@ -36,8 +36,20 @@ app.use((c, next) => {
 // Error handling middleware
 app.onError((err, c) => {
   if (err instanceof HTTPException) {
+    logger.error(
+      {
+        message: err.message,
+      },
+      err,
+    );
     return c.json(err.message, err.status);
   }
+  logger.error(
+    {
+      message: 'Internal Server Error',
+    },
+    err,
+  );
   return c.text('Internal Server Error', 500);
 });
 
@@ -52,11 +64,10 @@ app.get('/users', async c => {
     });
     return c.json(users);
   } catch (error) {
-    logger.error({
+    throw new HTTPException(500, {
       message: error instanceof Error ? error.message : `${error}`,
-      stack: error instanceof Error ? error.stack : undefined,
+      cause: error instanceof Error ? error.stack : undefined,
     });
-    throw new HTTPException(500, { message: 'Internal Server Error' });
   } finally {
     await prisma.$disconnect();
   }
@@ -87,11 +98,10 @@ app.post(
       });
       return c.json({ message: 'User created successfully' });
     } catch (error) {
-      logger.error({
+      throw new HTTPException(500, {
         message: error instanceof Error ? error.message : `${error}`,
-        stack: error instanceof Error ? error.stack : undefined,
+        cause: error instanceof Error ? error.stack : undefined,
       });
-      throw new HTTPException(500, { message: 'Internal Server Error' });
     } finally {
       await prisma.$disconnect();
     }

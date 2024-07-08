@@ -1,10 +1,10 @@
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
-import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 
 interface ApiGatewayConstructProps {
-  handler: lambdaNodejs.NodejsFunction;
-  resourceName: string;
+  readonly handler: lambda.IFunction;
+  readonly resourceName: string;
 }
 
 export class ApiGatewayConstruct extends Construct {
