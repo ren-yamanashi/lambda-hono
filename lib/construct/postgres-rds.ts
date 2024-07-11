@@ -1,4 +1,4 @@
-import { Token } from 'aws-cdk-lib';
+import { Stack, Token } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
@@ -25,7 +25,7 @@ export class PostgresRds extends Construct {
       secretName: `/${id}/rds/`,
     });
 
-    this.instance = new rds.DatabaseInstance(this, `${id}Instance`, {
+    this.instance = new rds.DatabaseInstance(this, `${Stack.of(this).stackName}Instance`, {
       engine,
       instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
       credentials,

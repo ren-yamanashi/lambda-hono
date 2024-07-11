@@ -37,7 +37,7 @@ export class NodejsFunctionWithConnectPrisma extends lambdaNodejs.NodejsFunction
       bundling: {
         nodeModules: ['prisma', '@prisma/client'],
         commandHooks: {
-          // NOTE: prismaディレクトリを出力用ディレクトリにコピーし、Prisma ClientをLambda関数で使用できるようにする
+          // NOTE: Copy the prisma directory to the output directory and make the Prisma Client available to your Lambda function.
           beforeInstall: (inputDir, outputDir) => [`cp -r ${inputDir}/prisma ${outputDir}`],
           beforeBundling: () => [],
           afterBundling: () => [],

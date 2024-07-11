@@ -1,26 +1,22 @@
-import { RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
+import { Stack, StackProps } from 'aws-cdk-lib';
+import * as actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as logs from 'aws-cdk-lib/aws-logs';
 import { Construct } from 'constructs';
+import { EmailSns } from './construct/email-sns';
 import { ErrorAlarmConstruct } from './construct/error-alarm';
 import * as lambda from './construct/lambda';
 import { PostgresRds } from './construct/postgres-rds';
-
 export class LambdaRdsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
-
-    const logGroup = new logs.LogGroup(this, 'LogGroup', {
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
 
     // ------------------------------
     // vpc
     // ------------------------------
     const vpc = new ec2.Vpc(this, 'VPC', {
       ipAddresses: ec2.IpAddresses.cidr('192.168.0.0/24'),
-      // NOTE: creates private subnets only. ISOLATED, so no NAT gateway is created.
+      // NOTE: Creates private subnets only. ISOLATED, so no NAT gateway is created.
       subnetConfiguration: [
         {
           cidrMask: 26,
@@ -52,7 +48,7 @@ export class LambdaRdsStack extends Stack {
     // ------------------------------
     // lambda
     // ------------------------------
-    new lambda.LambdaApiGateway(this, 'HonoLambdaFunction', {
+    const lambdaApiGateway = new lambda.LambdaApiGateway(this, 'HonoLambdaFunction', {
       vpc,
       securityGroups: [securityGroup],
       environment: {
@@ -73,18 +69,26 @@ export class LambdaRdsStack extends Stack {
     });
 
     // ------------------------------
-    // cloud watch
+    // sns
     // ------------------------------
-    const errorAlarm = new ErrorAlarmConstruct(this, 'ErrorAlarm', { logGroup });
+    const emailSns = new EmailSns(this, 'EmailSns');
 
-    // NOTE: CloudWatchからSNSに対してパブリッシュを許可
+    // NOTE: Allow publishing to SNS from CloudWatch.
     const snsPublishPolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       principals: [new iam.ServicePrincipal('cloudwatch.amazonaws.com')],
       actions: ['sns:Publish'],
-      resources: [errorAlarm.topicArn],
+      resources: [emailSns.topic.topicArn],
     });
 
-    errorAlarm.addResourcePolicy(snsPublishPolicy);
+    emailSns.topic.addToResourcePolicy(snsPublishPolicy);
+
+    // ------------------------------
+    // cloud watch
+    // ------------------------------
+    new ErrorAlarmConstruct(this, 'ErrorAlarm', {
+      logGroup: lambdaApiGateway.handler.logGroup,
+      alarmAction: new actions.SnsAction(emailSns.topic),
+    });
   }
 }
