@@ -8,7 +8,6 @@ import { Construct } from 'constructs';
 
 interface ErrorAlarmConstructProps {
   readonly logGroup: logs.ILogGroup;
-  readonly resourceName: string;
 }
 
 export class ErrorAlarmConstruct extends Construct {
@@ -18,7 +17,7 @@ export class ErrorAlarmConstruct extends Construct {
   constructor(scope: Construct, id: string, props: ErrorAlarmConstructProps) {
     super(scope, id);
 
-    const metricNamespace = `${props.resourceName}/Lambda`;
+    const metricNamespace = `${id}/Lambda`;
     const metricName = 'LambdaError';
 
     this.topic = new sns.Topic(this, 'ErrorAlarmTopic', {
@@ -26,7 +25,9 @@ export class ErrorAlarmConstruct extends Construct {
     });
     this.topicArn = this.topic.topicArn;
 
-    if (!process.env.EMAIL_ADDRESS) throw new Error('EMAIL_ADDRESS is not set');
+    if (!process.env.EMAIL_ADDRESS) {
+      throw new Error('EMAIL_ADDRESS is not set');
+    }
     new sns.Subscription(this, 'MonitorAlarmEmail', {
       endpoint: process.env.EMAIL_ADDRESS,
       protocol: sns.SubscriptionProtocol.EMAIL,
@@ -42,7 +43,7 @@ export class ErrorAlarmConstruct extends Construct {
     const metric = new cloudwatch.Metric({
       namespace: metricNamespace,
       metricName,
-      period: cdk.Duration.minutes(10),
+      period: cdk.Duration.minutes(1),
       statistic: cloudwatch.Stats.SUM,
     });
 
@@ -50,8 +51,8 @@ export class ErrorAlarmConstruct extends Construct {
       metric,
       // NOTE: 直近3回の評価で2回以上エラーが発生した場合にアラームを発生させる
       threshold: 1,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
+      evaluationPeriods: 1,
+      datapointsToAlarm: 1,
     });
     alarm.addAlarmAction(new actions.SnsAction(this.topic));
   }
