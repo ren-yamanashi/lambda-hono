@@ -1,12 +1,16 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as logs from 'aws-cdk-lib/aws-logs';
+import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { EmailSns } from './construct/email-sns';
 import { ErrorAlarmConstruct } from './construct/error-alarm';
 import * as lambda from './construct/lambda';
 import { PostgresRds } from './construct/postgres-rds';
+
 export class LambdaRdsStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
@@ -39,10 +43,23 @@ export class LambdaRdsStack extends Stack {
     // ------------------------------
     // rds
     // ------------------------------
+    if (!process.env.DATABASE_NAME || !process.env.POSTGRES_USER) {
+      throw new Error('Please set DATABASE_NAME and POSTGRES_USER in the environment variables.');
+    }
+    const credentials = rds.Credentials.fromGeneratedSecret(process.env.POSTGRES_USER, {
+      secretName: `${Stack.of(this).stackName}/credentials/`,
+    });
+
     const postgresRds = new PostgresRds(this, 'PostgresRds', {
       vpc,
+      credentials,
+      databaseName: process.env.DATABASE_NAME,
+      availabilityZone: 'ap-northeast-1a',
+      storageEncrypted: true,
     });
+
     const databaseUrl = postgresRds.getDatabaseUrl();
+
     postgresRds.allowInboundAccess(securityGroup);
 
     // ------------------------------
@@ -71,7 +88,15 @@ export class LambdaRdsStack extends Stack {
     // ------------------------------
     // sns
     // ------------------------------
-    const emailSns = new EmailSns(this, 'EmailSns');
+    if (!process.env.EMAIL_ADDRESS) {
+      throw new Error('EMAIL_ADDRESS is not set');
+    }
+    const emailSns = new EmailSns(this, 'EmailSns', {
+      displayName: 'EmailTopic',
+      emailSubscriptionOptions: {
+        endpoint: process.env.EMAIL_ADDRESS,
+      },
+    });
 
     // NOTE: Allow publishing to SNS from CloudWatch.
     const snsPublishPolicy = new iam.PolicyStatement({
@@ -87,8 +112,19 @@ export class LambdaRdsStack extends Stack {
     // cloud watch
     // ------------------------------
     new ErrorAlarmConstruct(this, 'ErrorAlarm', {
+      namespace: 'LambdaApiGatewayErrorMetric',
+      metricName: 'ErrorLogCount',
+      statistic: cloudwatch.Stats.SUM,
       logGroup: lambdaApiGateway.handler.logGroup,
       alarmAction: new actions.SnsAction(emailSns.topic),
+      metricFilterOptions: {
+        filterPattern: logs.FilterPattern.literal('{ $.level = "ERROR" }'),
+      },
+      createAlarmOptions: {
+        threshold: 1,
+        evaluationPeriods: 1,
+        datapointsToAlarm: 1,
+      },
     });
   }
 }

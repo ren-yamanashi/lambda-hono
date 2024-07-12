@@ -25,7 +25,7 @@ export interface NodejsFunctionWithConnectPrismaProps extends lambdaNodejs.Nodej
    * the function. Because the execution time affects cost, set this value
    * based on the function's expected execution time.
    *
-   * @default Duration.seconds(15)
+   * @default Duration.seconds(120)
    */
   readonly timeout?: Duration;
 }
@@ -44,7 +44,7 @@ export class NodejsFunctionWithConnectPrisma extends lambdaNodejs.NodejsFunction
         },
       },
       depsLockFilePath: props.depsLockFilePath,
-      timeout: props.timeout ?? Duration.seconds(15),
+      timeout: props.timeout ?? Duration.seconds(120),
       runtime: props.runtime ?? lambda.Runtime.NODEJS_20_X,
     });
   }
