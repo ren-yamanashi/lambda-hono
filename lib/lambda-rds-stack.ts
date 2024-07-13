@@ -1,59 +1,130 @@
-import * as cdk from 'aws-cdk-lib';
+import { Stack, StackProps } from 'aws-cdk-lib';
+import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as actions from 'aws-cdk-lib/aws-cloudwatch-actions';
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
-import { ApiGatewayConstruct } from './construct/api-gateway';
-import { LambdaConstruct } from './construct/lambda';
-import { RdsConstruct } from './construct/rds';
-import { SecurityGroupConstruct } from './construct/security-group';
-import { VpcConstruct } from './construct/vpc';
+import { EmailSns } from './construct/email-sns';
+import { ErrorAlarm } from './construct/error-alarm';
+import * as lambda from './construct/lambda';
+import { PostgresRds } from './construct/postgres-rds';
 
-export class LambdaRdsStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, resourceName: string, props?: cdk.StackProps) {
+export class LambdaRdsStack extends Stack {
+  constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    const logGroup = new logs.LogGroup(this, 'CustomLogGroup', {
-      logGroupName: `lambda/${resourceName}`,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    // ------------------------------
+    // vpc
+    // ------------------------------
+    const vpc = new ec2.Vpc(this, 'VPC', {
+      ipAddresses: ec2.IpAddresses.cidr('192.168.0.0/24'),
+      // NOTE: Creates private subnets only. ISOLATED, so no NAT gateway is created.
+      subnetConfiguration: [
+        {
+          cidrMask: 26,
+          name: 'isolated',
+          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
+        },
+      ],
+      maxAzs: 2,
     });
 
-    const vpcConstruct = new VpcConstruct(this, 'Vpc', { resourceName });
-
-    const securityGroupConstruct = new SecurityGroupConstruct(this, 'SecurityGroup', {
-      vpc: vpcConstruct.vpc,
-      resourceName,
+    // ------------------------------
+    // security group
+    // ------------------------------
+    const securityGroup = new ec2.SecurityGroup(this, 'SecurityGroup', {
+      vpc,
+      description: 'Allow all inbound and outbound traffic.',
+      allowAllOutbound: true,
     });
 
-    const rdsConstruct = new RdsConstruct(this, 'Rds', {
-      vpc: vpcConstruct.vpc,
-      resourceName,
+    // ------------------------------
+    // rds
+    // ------------------------------
+    if (!process.env.DATABASE_NAME || !process.env.POSTGRES_USER) {
+      throw new Error('Please set DATABASE_NAME and POSTGRES_USER in the environment variables.');
+    }
+    const credentials = rds.Credentials.fromGeneratedSecret(process.env.POSTGRES_USER, {
+      secretName: `${Stack.of(this).stackName}/credentials/`,
     });
-    const secret = rdsConstruct.instance.secret;
-    if (!secret) throw new Error('Rds secret not found.');
 
-    const lambdaConstruct = new LambdaConstruct(this, 'Lambda', {
-      vpc: vpcConstruct.vpc,
-      securityGroups: [securityGroupConstruct.lambdaSecurityGroup],
-      database: {
-        // NOTE: ここでシークレットのみを使用すると値の更新に失敗するため、ホストとポートには直接参照を使用する
-        // https://github.com/aws-cloudformation/cloudformation-coverage-roadmap/issues/369
-        host: rdsConstruct.instance.instanceEndpoint.hostname,
-        port: cdk.Token.asString(rdsConstruct.instance.instanceEndpoint.port),
-        // NOTE: `toString()`を使用する場合は、`unsafeUnwrap()`を使用しないとエラーになる
-        // https://docs.aws.amazon.com/cdk/api/v1/docs/@aws-cdk_core.SecretValue.html#unsafewbrunwrap
-        engine: secret.secretValueFromJson('engine').unsafeUnwrap().toString(),
-        username: secret.secretValueFromJson('username').unsafeUnwrap().toString(),
-        password: secret.secretValueFromJson('password').unsafeUnwrap().toString(),
-        dbname: secret.secretValueFromJson('dbname').unsafeUnwrap().toString(),
+    const postgresRds = new PostgresRds(this, 'PostgresRds', {
+      vpc,
+      credentials,
+      databaseName: process.env.DATABASE_NAME,
+      availabilityZone: 'ap-northeast-1a',
+      storageEncrypted: true,
+    });
+
+    const databaseUrl = postgresRds.getDatabaseUrl();
+
+    postgresRds.allowInboundAccess(securityGroup);
+
+    // ------------------------------
+    // lambda
+    // ------------------------------
+    const lambdaApiGateway = new lambda.LambdaApiGateway(this, 'HonoLambdaFunction', {
+      vpc,
+      securityGroups: [securityGroup],
+      environment: {
+        DATABASE_URL: databaseUrl,
       },
-      resourceName,
-      logGroup,
+      depsLockFilePath: 'backend/package-lock.json',
+      entry: 'backend/index.ts',
     });
 
-    rdsConstruct.allowInboundAccess(securityGroupConstruct.lambdaSecurityGroup);
+    new lambda.NodejsFunctionWithConnectPrisma(this, 'MigrateLambdaFunction', {
+      vpc,
+      securityGroups: [securityGroup],
+      environment: {
+        DATABASE_URL: databaseUrl,
+      },
+      depsLockFilePath: 'backend/package-lock.json',
+      entry: 'backend/migrate.ts',
+    });
 
-    new ApiGatewayConstruct(this, 'ApiGateway', {
-      handler: lambdaConstruct.honoLambdaFn,
-      resourceName,
+    // ------------------------------
+    // sns
+    // ------------------------------
+    if (!process.env.EMAIL_ADDRESS) {
+      throw new Error('EMAIL_ADDRESS is not set');
+    }
+    const emailSns = new EmailSns(this, 'EmailSns', {
+      displayName: 'EmailTopic',
+      emailSubscriptionOptions: {
+        endpoint: process.env.EMAIL_ADDRESS,
+      },
+    });
+
+    // NOTE: Allow publishing to SNS from CloudWatch.
+    const snsPublishPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [new iam.ServicePrincipal('cloudwatch.amazonaws.com')],
+      actions: ['sns:Publish'],
+      resources: [emailSns.topic.topicArn],
+    });
+
+    emailSns.topic.addToResourcePolicy(snsPublishPolicy);
+
+    // ------------------------------
+    // cloud watch
+    // ------------------------------
+    new ErrorAlarm(this, 'ErrorAlarm', {
+      namespace: 'LambdaApiGatewayErrorMetric',
+      metricName: 'ErrorLogCount',
+      statistic: cloudwatch.Stats.SUM,
+      logGroup: lambdaApiGateway.handler.logGroup,
+      alarmAction: new actions.SnsAction(emailSns.topic),
+      metricFilterOptions: {
+        filterPattern: logs.FilterPattern.literal('{ $.level = "ERROR" }'),
+      },
+      createAlarmOptions: {
+        threshold: 1,
+        evaluationPeriods: 1,
+        datapointsToAlarm: 1,
+      },
     });
   }
 }
