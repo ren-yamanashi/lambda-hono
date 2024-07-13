@@ -7,7 +7,7 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as rds from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { EmailSns } from './construct/email-sns';
-import { ErrorAlarmConstruct } from './construct/error-alarm';
+import { ErrorAlarm } from './construct/error-alarm';
 import * as lambda from './construct/lambda';
 import { PostgresRds } from './construct/postgres-rds';
 
@@ -111,7 +111,7 @@ export class LambdaRdsStack extends Stack {
     // ------------------------------
     // cloud watch
     // ------------------------------
-    new ErrorAlarmConstruct(this, 'ErrorAlarm', {
+    new ErrorAlarm(this, 'ErrorAlarm', {
       namespace: 'LambdaApiGatewayErrorMetric',
       metricName: 'ErrorLogCount',
       statistic: cloudwatch.Stats.SUM,

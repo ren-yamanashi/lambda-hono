@@ -18,7 +18,7 @@ export class LambdaApiGateway extends Construct {
 
     this.handler = new NodejsFunctionWithConnectPrisma(this, `${id}WithConnectPrisma`, {
       ...props,
-      // The total timeout for apigateway is 30 seconds, so it must be shorter than that.
+      // NOTE: The total timeout for apigateway is 30 seconds, so it must be shorter than that.
       timeout: Duration.seconds(29),
     });
 
